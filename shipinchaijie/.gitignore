@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+output/*.md
+output/*.json
+output/tmp/
+
+# 测试工作空间（保留在本地，不提交）
+../shipinchaijie-workspace/
