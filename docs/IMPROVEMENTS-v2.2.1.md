@@ -160,34 +160,66 @@ except Exception as e:
 
 ## 使用说明
 
-### 配置 .env 文件
+### 1. 获取 Gemini API Key
 
-在项目根目录的 `.env` 文件中配置以下内容：
+访问 [Google AI Studio](https://aistudio.google.com/apikey) 获取免费的 API Key：
+
+1. 使用 Google 账号登录
+2. 点击 "Create API Key" 按钮
+3. 选择或创建一个 Google Cloud 项目
+4. 复制生成的 API Key（格式通常为 `AIzaSy...`）
+
+> ⚠️ **安全提示**：请妥善保管你的 API Key，不要将其提交到代码仓库或公开分享
+
+### 2. 配置 .env 文件
+
+在项目根目录创建或编辑 `.env` 文件，添加以下配置：
 
 ```env
 # Gemini API Key（必需）
-GEMINI_API_KEY=AIzaSyAIt-lrA7Ud_t_YjEJ62J9sKgwiIlNY0Ww
+# 从 https://aistudio.google.com/apikey 获取
+GEMINI_API_KEY=your-api-key-here
 
-# Gemini 模型（可选，默认使用 gemini-2.5-flash）
-GEMINI_MODEL=gemini-3-flash-preview
+# Gemini 模型（可选，默认：gemini-2.5-flash）
+# 可选值：gemini-2.5-flash, gemini-3-flash-preview, gemini-pro
+GEMINI_MODEL=gemini-2.5-flash
 
-# 代理 URL（可选，但在国内强烈推荐）
+# 代理 URL（可选，国内用户强烈推荐）
+# 格式：http://host:port 或 socks5://host:port
 PROXY_URL=http://127.0.0.1:7897
 ```
 
-### 测试改进功能
+**配置说明：**
+- `GEMINI_API_KEY`：必需，你的 Gemini API 密钥
+- `GEMINI_MODEL`：可选，指定使用的模型版本
+- `PROXY_URL`：可选，但国内用户建议配置以确保 API 访问稳定
 
-运行测试脚本验证改进是否生效：
+### 3. 验证配置
+
+配置完成后，运行测试脚本验证：
 
 ```bash
 cd bin
 python test-improvements.py
 ```
 
-测试脚本会检查：
-1. .env 文件是否正确加载
-2. API key 前置检查是否工作
-3. 代理设置是否正确
+测试脚本会自动检查：
+- ✓ .env 文件是否正确加载
+- ✓ API Key 格式是否有效
+- ✓ 代理设置是否正确
+- ✓ 网络连接是否正常
+
+### 4. 开始使用
+
+配置完成后，即可使用视频拆解功能：
+
+```bash
+# 下载视频
+python bin/video-download.py "https://youtube.com/watch?v=..."
+
+# 分析视频
+python bin/gemini-analyze.py path/to/video.mp4
+```
 
 ---
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 gemini-analyze.py — 使用 Google Gemini API 分析视频内容
 用法: python gemini-analyze.py <视频文件路径> [--prompt-file <prompt文件路径>]
@@ -12,6 +13,12 @@ import time
 import re
 import argparse
 from pathlib import Path
+
+# 设置 Windows 控制台 UTF-8 编码
+if sys.platform == 'win32':
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 
 class FatalError(Exception):
@@ -59,10 +66,10 @@ def setup_proxy_early():
         os.environ["HTTP_PROXY"] = proxy_url
         os.environ["HTTPS_PROXY"] = proxy_url
         os.environ["ALL_PROXY"] = proxy_url
-        print(f"✓ 使用代理: {proxy_url}")
+        print(f"[OK] 使用代理: {proxy_url}")
         return proxy_url
     else:
-        print("⚠ 未配置代理，如果 API 调用失败请在 .env 文件中设置 PROXY_URL")
+        print("[WARNING] 未配置代理，如果 API 调用失败请在 .env 文件中设置 PROXY_URL")
         return None
 
 
@@ -159,7 +166,7 @@ def wait_for_processing(client, uploaded_file, timeout=600):
             if consecutive_errors >= 5:
                 print(f"ERROR: 连续 {consecutive_errors} 次查询失败，放弃重试。最后错误: {e}")
                 raise RuntimeError(f"查询处理状态连续失败: {e}")
-            print(f"WARNING: 查询处理状态失败 — {e}，正在重试 ({consecutive_errors}/5)...")
+            print(f"WARNING: 查询处理状态失败 - {e}，正在重试 ({consecutive_errors}/5)...")
             time.sleep(5)
             continue
 
