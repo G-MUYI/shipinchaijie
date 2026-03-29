@@ -57,16 +57,20 @@ def main():
     parser.add_argument("--proxy", default=None, help="代理服务器 (例如: http://127.0.0.1:7890)")
     args = parser.parse_args()
 
-    # 确定输出目录
-    output_dir = args.output_dir or tempfile.gettempdir()
-    os.makedirs(output_dir, exist_ok=True)
-
-    # 设置代理：优先使用命令行参数，其次使用.env中的PROXY_URL
+    # 【改进1】立即设置代理，确保所有网络操作都使用代理
+    # 优先级：命令行参数 > .env文件中的PROXY_URL
     proxy = args.proxy or os.environ.get("PROXY_URL")
     if proxy:
         os.environ["HTTP_PROXY"] = proxy
         os.environ["HTTPS_PROXY"] = proxy
-        print(f"使用代理: {proxy}")
+        os.environ["ALL_PROXY"] = proxy  # 添加 ALL_PROXY 支持更多工具
+        print(f"✓ 使用代理: {proxy}")
+    else:
+        print("⚠ 未配置代理，如果下载失败请在 .env 文件中设置 PROXY_URL")
+
+    # 确定输出目录
+    output_dir = args.output_dir or tempfile.gettempdir()
+    os.makedirs(output_dir, exist_ok=True)
 
     # 检查 yt-dlp
     ytdlp_cmd = ["python", "-m", "yt_dlp"]
@@ -88,6 +92,7 @@ def main():
             capture_output=True,
             text=True,
             timeout=30,
+            env=os.environ.copy(),  # 【改进2】确保子进程继承代理环境变量
         )
         if result.returncode == 0 and result.stdout.strip():
             title = result.stdout.strip().split("\n")[0]
@@ -125,11 +130,15 @@ def main():
     download_args.append(args.url)
 
     try:
-        subprocess.run(download_args, check=True)
+        subprocess.run(download_args, check=True, env=os.environ.copy())  # 【改进3】确保下载时也使用代理环境变量
     except subprocess.CalledProcessError:
         print("ERROR: 视频下载失败。请检查:")
         print("  - URL 是否有效")
         print("  - 网络连接是否正常")
+        if proxy:
+            print(f"  - 代理 {proxy} 是否可用")
+        else:
+            print("  - 是否需要配置代理（在 .env 文件中设置 PROXY_URL）")
         print("  - 视频是否需要登录/付费")
         sys.exit(1)
 

@@ -18,6 +18,54 @@ class FatalError(Exception):
     """Raised when the program encounters an unrecoverable error."""
 
 
+def check_api_key_early():
+    """【新增】在程序开始时立即检查 API key 是否配置"""
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        print("=" * 60)
+        print("ERROR: 未配置 GEMINI_API_KEY")
+        print("=" * 60)
+        print("\n请按以下步骤配置 API key：")
+        print("\n1. 获取 API key:")
+        print("   访问 https://aistudio.google.com/apikey")
+        print("\n2. 配置方式（选择其一）：")
+        print("   方式A - 在 .env 文件中添加（推荐）：")
+        print("     GEMINI_API_KEY=your-api-key-here")
+        print("\n   方式B - 设置环境变量：")
+        print("     export GEMINI_API_KEY='your-api-key'  # macOS/Linux")
+        print("     $env:GEMINI_API_KEY='your-api-key'    # Windows PowerShell")
+        print("\n   方式C - 在 Claude Code settings.json 中配置：")
+        print("     \"env\": { \"GEMINI_API_KEY\": \"your-api-key\" }")
+        print("\n" + "=" * 60)
+        raise FatalError("未配置 GEMINI_API_KEY，程序终止")
+
+    # 简单验证 API key 格式（Google API key 通常以 AIza 开头）
+    if not key.startswith("AIza"):
+        print("=" * 60)
+        print("WARNING: API key 格式可能不正确")
+        print("=" * 60)
+        print(f"当前 API key: {key[:10]}...")
+        print("Google Gemini API key 通常以 'AIza' 开头")
+        print("请确认你使用的是正确的 API key")
+        print("=" * 60 + "\n")
+
+    return key
+
+
+def setup_proxy_early():
+    """【新增】在程序开始时立即设置代理"""
+    proxy_url = os.environ.get("PROXY_URL")
+    if proxy_url:
+        os.environ["HTTP_PROXY"] = proxy_url
+        os.environ["HTTPS_PROXY"] = proxy_url
+        os.environ["ALL_PROXY"] = proxy_url
+        print(f"✓ 使用代理: {proxy_url}")
+        return proxy_url
+    else:
+        print("⚠ 未配置代理，如果 API 调用失败请在 .env 文件中设置 PROXY_URL")
+        return None
+
+
 def load_env_file():
     """从 .env 文件加载环境变量"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -166,14 +214,51 @@ def analyze_video(client, uploaded_file, prompt_text, model_name, timeout=600):
 
     except Exception as e:
         error_msg = str(e)
+        print("\n" + "=" * 60)
+        print("ERROR: API 调用失败")
+        print("=" * 60)
+
+        # 【改进】更详细的错误分类和解决建议
         if "quota" in error_msg.lower() or "429" in error_msg:
-            print("ERROR: API 配额耗尽。请稍后重试或升级 API 计划。")
-        elif "permission" in error_msg.lower() or "403" in error_msg:
-            print("ERROR: API key 权限不足。请检查 key 是否有效。")
+            print("问题类型: API 配额耗尽")
+            print("\n解决方案:")
+            print("  1. 等待一段时间后重试（免费配额有时间限制）")
+            print("  2. 升级到付费 API 计划")
+            print("  3. 检查 https://aistudio.google.com/apikey 的配额使用情况")
+        elif "permission" in error_msg.lower() or "403" in error_msg or "401" in error_msg:
+            print("问题类型: API key 权限不足或无效")
+            print("\n解决方案:")
+            print("  1. 检查 .env 文件中的 GEMINI_API_KEY 是否正确")
+            print("  2. 确认 API key 是否已激活")
+            print("  3. 重新生成 API key: https://aistudio.google.com/apikey")
         elif "not found" in error_msg.lower() or "404" in error_msg:
-            print("ERROR: 模型不可用。请检查 API 版本。")
+            print("问题类型: 模型不可用")
+            print(f"当前模型: {model_name}")
+            print("\n解决方案:")
+            print("  1. 检查模型名称是否正确")
+            print("  2. 尝试使用默认模型（删除 .env 中的 GEMINI_MODEL）")
+        elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
+            print("问题类型: 网络连接问题")
+            print("\n解决方案:")
+            proxy_url = os.environ.get("PROXY_URL")
+            if proxy_url:
+                print(f"  当前代理: {proxy_url}")
+                print("  1. 检查代理是否正常运行")
+                print("  2. 尝试更换代理端口")
+            else:
+                print("  1. 检查网络连接")
+                print("  2. 如果在国内，需要配置代理（在 .env 中设置 PROXY_URL）")
+                print("     例如: PROXY_URL=http://127.0.0.1:7897")
+            print("  3. 检查防火墙设置")
         else:
-            print(f"ERROR: 分析失败 — {e}")
+            print(f"问题类型: 未知错误")
+            print(f"错误信息: {error_msg}")
+            print("\n解决方案:")
+            print("  1. 检查网络连接")
+            print("  2. 检查 API key 是否有效")
+            print("  3. 查看完整错误日志")
+
+        print("=" * 60 + "\n")
         raise
 
 
@@ -371,8 +456,14 @@ def main():
     )
     args = parser.parse_args()
 
-    # 加载 .env 环境变量
+    # 【改进1】加载 .env 环境变量（必须最先执行）
     load_env_file()
+
+    # 【改进2】立即设置代理（在任何网络操作之前）
+    proxy_url = setup_proxy_early()
+
+    # 【改进3】立即检查 API key（在初始化客户端之前）
+    api_key = check_api_key_early()
 
     # 验证视频文件
     if not os.path.isfile(args.video_path):
@@ -382,8 +473,7 @@ def main():
     check_dependencies()
     from google import genai
 
-    # 获取 API key 和模型名
-    api_key = get_api_key()
+    # 获取模型名
     model_name = get_model_name()
 
     # 读取分析 prompt
@@ -399,17 +489,8 @@ def main():
     with open(prompt_file, "r", encoding="utf-8") as f:
         prompt_text = f.read()
 
-    # 初始化 Gemini 客户端
+    # 初始化 Gemini 客户端（代理已在前面设置好）
     print("初始化 Gemini API...")
-
-    # 配置代理（如果设置了PROXY_URL环境变量）
-    proxy_url = os.environ.get("PROXY_URL")
-    if proxy_url:
-        print(f"使用代理: {proxy_url}")
-        # 设置环境变量供httpx使用
-        os.environ["HTTP_PROXY"] = proxy_url
-        os.environ["HTTPS_PROXY"] = proxy_url
-
     client = genai.Client(api_key=api_key)
 
     # 上传视频
