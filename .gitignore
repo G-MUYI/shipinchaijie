@@ -59,3 +59,7 @@ output/tmp/
 # 测试文件
 *.test.js
 *.spec.js
+
+# trigger-eval临时文件
+trigger-eval-*.json
+trigger-eval-*.html
