@@ -1,6 +1,6 @@
 ---
 name: video-breakdown
-version: 2.1.0
+version: 2.2.0
 description: |
   视频拆解提示词生成器 — 将视频拆解为极其细致的镜头语言描述，生成可直接用于 AI 视频生成工具的专业提示词。
 
@@ -10,6 +10,13 @@ description: |
   3. 用户提到AI视频生成平台：Sora、可灵、Runway、Seedance、即梦、Luma、Pika、Kling
   4. 用户说：帮我分析这个视频、我想做一个类似的视频、这个视频怎么拍的、给我写个视频提示词、拆解这个视频
   5. 用户提供本地视频文件路径（.mp4、.mov、.avi等）
+
+  **v2.2.0 新增优化（2026-03-29）：**
+  - 新增战斗动作编排指南，系统性解决一镜到底连贯性问题
+  - 完善Boss对战完整流程（登场→攻击→闪避→反击→结束7阶段）
+  - 强化物理逻辑细节（重力、惯性、力的传递、环境反馈）
+  - 优化第一人称POV战斗描述（手部动作、视线跟随、身体反馈）
+  - 新增Boss战测试用例，确保生成质量
 
   **v2.1.0 新增优化（2026-03-29）：**
   - 首帧绘图提示词强化真实感风格，移除CG动画渲染等词汇
@@ -497,6 +504,7 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 ## 参考文档
 
 - `references/prompt-writing-standards.md` — 提示词写作标准（手部描述渐进规则、总述区/时间线区要求、真实感渲染描述等）
+- `references/combat-choreography-guide.md` — **战斗动作编排指南（新增）** — 一镜到底连贯性、Boss对战完整流程、物理逻辑细节、第一人称POV战斗特殊处理
 - `references/seedance-guide.md` — Seedance 2.0 平台专属指南（十大能力类型、@引用系统、时长处理策略等）
 - `references/error-handling.md` — 错误处理指南（API错误、依赖安装错误、视频下载错误、文件错误等）
 - `templates/prompt-template.md` — 专业版提示词模板
@@ -513,5 +521,10 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 - **分段要极细** — 1-2秒一段，关键动作精确到0.5秒
 - **动作要连贯** — 每个动作包含完整的准备→执行→恢复过程，符合物理规律
 - **手部描述必须渐进** — 开头只描述自然手部外观，特效从触发瞬间才开始出现
+- **战斗场景特别注意** — 参考 `references/combat-choreography-guide.md`，确保：
+  - 一镜到底的镜头连贯性（流畅运镜，无突然切换）
+  - Boss对战完整流程（登场→攻击→闪避→反击→结束，至少占50%时长）
+  - 物理逻辑细节（重力、惯性、力的传递、环境反馈）
+  - 第一人称POV的沉浸感（手部伸入画面、视线跟随、身体反馈）
 - **错误要友好** — 所有错误都给出清晰的解决建议
 - **进度要可见** — 每个步骤都输出当前状态
