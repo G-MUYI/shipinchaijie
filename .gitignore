@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
 *.so
 .Python
 env/
@@ -34,20 +36,25 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# 输出文件
-shipinchaijie/output/
-shipinchaijie-workspace/iteration-*/
-shipinchaijie-workspace/*.json
-shipinchaijie-workspace/*.html
+# 环境变量
+.env
+.env.local
+
+# 输出目录 - 所有生成文件
+output/*.md
+output/*.json
+output/*.mp4
+output/*.avi
+output/*.mov
+output/tmp/
+
+# 保留 .gitkeep
+!output/.gitkeep
 
 # 临时文件
 *.tmp
 *.log
 *.cache
-
-# 环境变量
-.env
-.env.local
 
 # 测试文件
 *.test.js
