@@ -63,3 +63,7 @@ output/tmp/
 # trigger-eval临时文件
 trigger-eval-*.json
 trigger-eval-*.html
+
+# 测试工作区
+video-breakdown-workspace/
+*-workspace/
