@@ -1,111 +1,161 @@
-# 快速测试整个工作流程 (Windows PowerShell)
+# Quick workflow smoke test for Windows PowerShell
 
 $ErrorActionPreference = "Stop"
-$SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
-$PROJECT_DIR = Split-Path -Parent $SCRIPT_DIR
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectDir = Split-Path -Parent $scriptDir
 
-Write-Host "=== 视频拆解提示词工作流程测试 ===" -ForegroundColor Cyan
-Write-Host ""
+function Get-PythonCommand {
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        return @("py", "-3")
+    }
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        return @("python")
+    }
+    return @()
+}
 
-# 1. 检查 Python
-Write-Host "[1/5] 检查 Python..."
-$py = if (Get-Command py -ErrorAction SilentlyContinue) { @('py', '-3') }
-      elseif (Get-Command python -ErrorAction SilentlyContinue) { @('python') }
-      else { @() }
+function Invoke-Python {
+    param(
+        [string[]]$PythonCommand,
+        [string[]]$Arguments
+    )
 
-if ($py.Count -eq 0) {
-    Write-Host "ERROR: 未找到 Python" -ForegroundColor Red
+    $exe = $PythonCommand[0]
+    $baseArgs = if ($PythonCommand.Count -gt 1) { $PythonCommand[1..($PythonCommand.Count - 1)] } else { @() }
+    $argumentList = @()
+    if ($baseArgs.Count -gt 0) {
+        $argumentList += $baseArgs
+    }
+    if ($Arguments.Count -gt 0) {
+        $argumentList += $Arguments
+    }
+
+    $stdoutFile = [System.IO.Path]::GetTempFileName()
+    $stderrFile = [System.IO.Path]::GetTempFileName()
+
+    try {
+        $process = Start-Process -FilePath $exe -ArgumentList $argumentList -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+        $global:LASTEXITCODE = $process.ExitCode
+
+        $stdout = if ((Get-Item $stdoutFile).Length -gt 0) { Get-Content $stdoutFile -Raw -Encoding UTF8 } else { "" }
+        $stderr = if ((Get-Item $stderrFile).Length -gt 0) { Get-Content $stderrFile -Raw -Encoding UTF8 } else { "" }
+
+        return [PSCustomObject]@{
+            ExitCode = $process.ExitCode
+            StdOut = $stdout.Trim()
+            StdErr = $stderr.Trim()
+        }
+    }
+    finally {
+        Remove-Item $stdoutFile, $stderrFile -ErrorAction SilentlyContinue
+    }
+}
+
+$pythonCommand = Get-PythonCommand
+
+Write-Output "=== Video Breakdown Workflow Smoke Test ==="
+Write-Output ""
+
+Write-Output "[1/5] Checking Python..."
+if ($pythonCommand.Count -eq 0) {
+    Write-Output "ERROR: Python was not found"
     exit 1
 }
-$version = & $py[0] $(if ($py.Count -gt 1) { $py[1] }) --version
-Write-Host "✓ Python: $version" -ForegroundColor Green
+$pythonVersion = Invoke-Python -PythonCommand $pythonCommand -Arguments @("--version")
+if ($pythonVersion.ExitCode -ne 0) {
+    Write-Output "ERROR: Could not run Python"
+    if ($pythonVersion.StdErr) {
+        Write-Output $pythonVersion.StdErr
+    }
+    exit 1
+}
+if ($pythonVersion.StdOut) {
+    Write-Output $pythonVersion.StdOut
+}
+Write-Output "[OK] Python is available"
 
-# 2. 检查依赖
-Write-Host ""
-Write-Host "[2/5] 检查依赖..."
-& $py[0] $(if ($py.Count -gt 1) { $py[1] }) -c "from google import genai" 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✓ google-genai" -ForegroundColor Green
+Write-Output ""
+Write-Output "[2/5] Checking dependencies..."
+$dependencyCheck = Invoke-Python -PythonCommand $pythonCommand -Arguments @("-c", "__import__('google.genai')")
+if ($dependencyCheck.ExitCode -eq 0) {
+    Write-Output "[OK] google-genai"
 } else {
-    Write-Host "✗ google-genai 未安装" -ForegroundColor Yellow
+    Write-Output "[WARN] google-genai is not installed"
+    if ($dependencyCheck.StdErr) {
+        Write-Output $dependencyCheck.StdErr
+    }
 }
 
 if (Get-Command yt-dlp -ErrorAction SilentlyContinue) {
-    Write-Host "✓ yt-dlp" -ForegroundColor Green
+    Write-Output "[OK] yt-dlp"
 } else {
-    Write-Host "✗ yt-dlp 未安装" -ForegroundColor Yellow
+    Write-Output "[WARN] yt-dlp is not installed"
 }
 
-# 3. 检查 API Key
-Write-Host ""
-Write-Host "[3/5] 检查 API Key..."
+Write-Output ""
+Write-Output "[3/5] Checking API key..."
 if ($env:GEMINI_API_KEY) {
-    Write-Host "✓ GEMINI_API_KEY 已设置" -ForegroundColor Green
+    Write-Output "[OK] GEMINI_API_KEY is set"
 } else {
-    Write-Host "✗ GEMINI_API_KEY 未设置" -ForegroundColor Yellow
+    Write-Output "[WARN] GEMINI_API_KEY is not set"
 }
 
-# 4. 测试校验脚本
-Write-Host ""
-Write-Host "[4/5] 测试校验脚本..."
-Write-Host "测试新格式检测..."
+Write-Output ""
+Write-Output "[4/5] Running generate + validate smoke test..."
+$analysisFile = Join-Path $projectDir "output\analysis-final.json"
+$smokeOutput = Join-Path $env:TEMP "video-breakdown-smoke.md"
 
-$testContent = @"
-# 视频拆解报告
-## 详细拆解分析
-### 基础信息
-### 视觉风格与色调分析
-### 光线与质感
-### 运镜方式
-### 主角描述
-### 手部状态
-### 场景描述
-### 关键动作与节奏分析
-### 音频与字幕元素
-### 制作参考建议
-### Timeline
-## AI 视频生成提示词
-
-**核心主题**：测试
-**角色设定**：测试
-**镜头运动**：测试
-运镜：测试
-特效：测试
-
-禁止出现文字、字幕、LOGO或水印。
-"@
-
-$testFile = "$env:TEMP\test-new-format.md"
-$testContent | Out-File -FilePath $testFile -Encoding UTF8
-
-& $py[0] $(if ($py.Count -gt 1) { $py[1] }) "$PROJECT_DIR\bin\validate-output.py" breakdown $testFile 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✓ 新格式校验通过" -ForegroundColor Green
+if (-not (Test-Path $analysisFile)) {
+    Write-Output "[WARN] analysis-final.json not found, skipping generate + validate test"
 } else {
-    Write-Host "✗ 新格式校验失败" -ForegroundColor Red
-}
-Remove-Item $testFile -ErrorAction SilentlyContinue
+    $generateResult = Invoke-Python -PythonCommand $pythonCommand -Arguments @(
+        (Join-Path $projectDir "bin\generate-prompts.py"),
+        $analysisFile,
+        "--output",
+        $smokeOutput
+    )
+    if ($generateResult.ExitCode -ne 0) {
+        Write-Output "[FAIL] generate-prompts.py failed"
+        if ($generateResult.StdErr) {
+            Write-Output $generateResult.StdErr
+        }
+        exit 1
+    }
 
-# 5. 检查模板文件
-Write-Host ""
-Write-Host "[5/5] 检查模板文件..."
-if (Test-Path "$PROJECT_DIR\templates\prompt-template.md") {
-    Write-Host "✓ 专业版模板" -ForegroundColor Green
-} else {
-    Write-Host "✗ 专业版模板缺失" -ForegroundColor Red
+    $validateResult = Invoke-Python -PythonCommand $pythonCommand -Arguments @(
+        (Join-Path $projectDir "bin\validate-output.py"),
+        "breakdown",
+        $smokeOutput
+    )
+    if ($validateResult.ExitCode -eq 0) {
+        Write-Output "[OK] Generated markdown passed validation"
+    } else {
+        Write-Output "[FAIL] Generated markdown failed validation"
+        if ($validateResult.StdErr) {
+            Write-Output $validateResult.StdErr
+        }
+        exit 1
+    }
+
+    Remove-Item $smokeOutput -ErrorAction SilentlyContinue
 }
 
-if (Test-Path "$PROJECT_DIR\templates\prompt-template-basic.md") {
-    Write-Host "✓ 基础版模板" -ForegroundColor Green
-} else {
-    Write-Host "✗ 基础版模板缺失" -ForegroundColor Red
+Write-Output ""
+Write-Output "[5/5] Checking template files..."
+$templateChecks = @(
+    @{ Path = Join-Path $projectDir "templates\prompt-template.md"; Name = "Professional template" },
+    @{ Path = Join-Path $projectDir "templates\prompt-template-basic.md"; Name = "Basic template" },
+    @{ Path = Join-Path $projectDir "templates\gemini-prompt.txt"; Name = "Gemini prompt" }
+)
+
+foreach ($check in $templateChecks) {
+    if (Test-Path $check.Path) {
+        Write-Output "[OK] $($check.Name)"
+    } else {
+        Write-Output "[FAIL] Missing: $($check.Name)"
+        exit 1
+    }
 }
 
-if (Test-Path "$PROJECT_DIR\templates\gemini-prompt.txt") {
-    Write-Host "✓ Gemini 提示词" -ForegroundColor Green
-} else {
-    Write-Host "✗ Gemini 提示词缺失" -ForegroundColor Red
-}
-
-Write-Host ""
-Write-Host "=== 测试完成 ===" -ForegroundColor Cyan
+Write-Output ""
+Write-Output "=== Smoke test complete ==="

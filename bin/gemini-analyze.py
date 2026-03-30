@@ -14,19 +14,18 @@ import re
 import argparse
 from pathlib import Path
 
+from utils import ensure_utf8_output, load_env_file, setup_proxy
+
 # 设置 Windows 控制台 UTF-8 编码
-if sys.platform == 'win32':
-    import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+ensure_utf8_output()
 
 
 class FatalError(Exception):
     """Raised when the program encounters an unrecoverable error."""
 
 
-def check_api_key_early():
-    """【新增】在程序开始时立即检查 API key 是否配置"""
+def check_api_key():
+    """检查 API key 是否配置，返回 key 或抛出 FatalError"""
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         print("=" * 60)
@@ -59,33 +58,6 @@ def check_api_key_early():
     return key
 
 
-def setup_proxy_early():
-    """【新增】在程序开始时立即设置代理"""
-    proxy_url = os.environ.get("PROXY_URL")
-    if proxy_url:
-        os.environ["HTTP_PROXY"] = proxy_url
-        os.environ["HTTPS_PROXY"] = proxy_url
-        os.environ["ALL_PROXY"] = proxy_url
-        print(f"[OK] 使用代理: {proxy_url}")
-        return proxy_url
-    else:
-        print("[WARNING] 未配置代理，如果 API 调用失败请在 .env 文件中设置 PROXY_URL")
-        return None
-
-
-def load_env_file():
-    """从 .env 文件加载环境变量"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    env_file = os.path.join(script_dir, "..", ".env")
-    if os.path.isfile(env_file):
-        with open(env_file, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, _, value = line.partition("=")
-                    os.environ.setdefault(key.strip(), value.strip().strip("'\""))
-
-
 def check_dependencies():
     """检查必要依赖是否安装"""
     try:
@@ -97,20 +69,6 @@ def check_dependencies():
             "  或运行 setup.sh / setup.ps1 安装所有依赖。"
         )
 
-
-def get_api_key():
-    """获取 Gemini API key"""
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        raise FatalError(
-            "未设置 GEMINI_API_KEY 环境变量。\n"
-            "请通过以下方式设置:\n"
-            "  export GEMINI_API_KEY='your-api-key'\n"
-            "  或 PowerShell: $env:GEMINI_API_KEY='your-api-key'\n"
-            "  或在 Claude Code settings.json 中配置 env.GEMINI_API_KEY\n\n"
-            "获取 API key: https://aistudio.google.com/apikey"
-        )
-    return key
 
 
 def get_model_name():
@@ -284,7 +242,7 @@ REQUIRED_TOP_LEVEL_SCHEMA = {
     "zodiac_sign": str,
     "visual_style": dict,
     "lighting_texture": dict,
-    "cg_realism": dict,
+    "realism_quality": dict,
     "overall_camera": str,
     "overall_sound": dict,
     "character_description": str,
@@ -315,7 +273,7 @@ REQUIRED_NESTED_SCHEMA = {
         "texture": str,
         "special_effects": str,
     },
-    "cg_realism": {
+    "realism_quality": {
         "rendering_style": str,
         "material_detail": str,
         "lighting_system": str,
@@ -331,6 +289,8 @@ REQUIRED_NESTED_SCHEMA = {
     "hand_description": {
         "natural_state": str,
         "magic_ball": str,
+        "zodiac_gesture": str,
+        "crush_action": str,
         "effect_onset_time": str,
         "effect_progression": str,
         "effect_persistence": str,
@@ -467,10 +427,10 @@ def main():
     load_env_file()
 
     # 【改进2】立即设置代理（在任何网络操作之前）
-    proxy_url = setup_proxy_early()
+    proxy_url = setup_proxy()
 
     # 【改进3】立即检查 API key（在初始化客户端之前）
-    api_key = check_api_key_early()
+    api_key = check_api_key()
 
     # 验证视频文件
     if not os.path.isfile(args.video_path):

@@ -14,18 +14,10 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from utils import ensure_utf8_output, load_env_file, setup_proxy
 
-def load_env_file():
-    """从.env文件加载环境变量"""
-    script_dir = Path(__file__).parent.parent
-    env_file = script_dir / ".env"
-    if env_file.exists():
-        with open(env_file, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ.setdefault(key.strip(), value.strip())
+
+ensure_utf8_output()
 
 
 def format_file_size(size_bytes):
@@ -57,16 +49,9 @@ def main():
     parser.add_argument("--proxy", default=None, help="代理服务器 (例如: http://127.0.0.1:7890)")
     args = parser.parse_args()
 
-    # 【改进1】立即设置代理，确保所有网络操作都使用代理
+    # 立即设置代理，确保所有网络操作都使用代理
     # 优先级：命令行参数 > .env文件中的PROXY_URL
-    proxy = args.proxy or os.environ.get("PROXY_URL")
-    if proxy:
-        os.environ["HTTP_PROXY"] = proxy
-        os.environ["HTTPS_PROXY"] = proxy
-        os.environ["ALL_PROXY"] = proxy  # 添加 ALL_PROXY 支持更多工具
-        print(f"✓ 使用代理: {proxy}")
-    else:
-        print("⚠ 未配置代理，如果下载失败请在 .env 文件中设置 PROXY_URL")
+    proxy = args.proxy or setup_proxy()
 
     # 确定输出目录
     output_dir = args.output_dir or tempfile.gettempdir()

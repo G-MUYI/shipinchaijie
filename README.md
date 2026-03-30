@@ -4,19 +4,18 @@
 
 ## 版本信息
 
-- **当前版本：** 2.1.0
+- **当前版本：** 2.2.0
 - **最后更新：** 2026-03-29
 - **改进内容：**
+  - ✅ 新增战斗动作编排指南，系统性解决一镜到底连贯性问题
+  - ✅ 完善Boss对战完整流程（登场→攻击→闪避→反击→结束7阶段）
+  - ✅ 强化物理逻辑细节（重力、惯性、力的传递、环境反馈）
+  - ✅ 优化第一人称POV战斗描述（手部动作、视线跟随、身体反馈）
   - ✅ 首帧绘图提示词强化真实感风格（移除CG动画渲染等词汇）
   - ✅ 明确禁用词汇清单（避免3D渲染感、CG动画风格、卡通化效果）
-  - ✅ 首帧提示词格式规范（必须以"电影级写实摄影，真实拍摄质感"开头）
   - ✅ 强化了多主题视频拆分逻辑（每个主题生成独立文件）
-  - ✅ 加强了手部渐进规则的说明和示例
-  - ✅ 明确了时间线分段要求（≥视频时长/2）
-  - ✅ 优化了文件命名规范（包含主题标识）
-  - ✅ 完善了错误示例和正确示例对比
 
-📝 **[查看完整改进历史](docs/improvements/README.md)**
+📝 **[查看完整改进历史](docs/changelog/README.md)**
 
 ## 功能
 
@@ -50,7 +49,11 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ### 2. 配置 API Key
 
 ```bash
-export GEMINI_API_KEY='your-api-key'
+# 复制模板文件
+cp .env.example .env
+
+# 编辑 .env，填入你的 API Key
+# GEMINI_API_KEY=your-actual-api-key
 ```
 
 获取地址：https://aistudio.google.com/apikey
@@ -87,24 +90,30 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 ├── SKILL.md                    # Claude Code Skill 定义（核心工作流程）
 ├── requirements.txt            # Python 依赖（google-genai, yt-dlp）
 ├── setup.sh / setup.ps1        # 依赖安装脚本
+├── .env.example                # 环境变量模板（复制为 .env 后填入 API Key）
 ├── bin/
 │   ├── gemini-analyze.py       # Gemini API 视频分析
 │   ├── video-download.py       # yt-dlp 视频下载
-│   └── validate-output.py      # 输出格式校验
+│   ├── validate-output.py      # 输出格式校验
+│   ├── generate-prompts.py     # 提示词生成工具
+│   └── utils.py                # 共享工具函数
 ├── templates/
 │   ├── gemini-prompt.txt       # Gemini 分析提示词
 │   ├── prompt-template.md      # 专业版提示词模板
 │   └── prompt-template-basic.md # 基础版提示词模板
 ├── references/                 # 参考文档
+│   ├── prompt-writing-standards.md  # 提示词写作标准
+│   ├── combat-choreography-guide.md # 战斗动作编排指南
 │   ├── seedance-guide.md       # Seedance 2.0 平台专属指南
-│   ├── prompt-writing-standards.md # 提示词写作标准
-│   └── error-handling.md       # 错误处理指南
+│   ├── error-handling.md       # 错误处理指南
+│   └── zodiac-gestures.md      # 星座手势定义
 ├── evals/                      # 测试用例
 │   └── evals.json              # 测试用例定义
 ├── docs/                       # 文档目录
-│   ├── improvements/           # 改进历史
+│   ├── changelog/              # 版本变更历史
 │   ├── reports/                # 项目报告
-│   └── 星座提示词规则.md       # 星座提示词规则
+│   ├── guides/                 # 快速入门指南
+│   └── archive/                # 归档文档
 └── output/                     # 生成结果输出目录（已 gitignore）
 ```
 
@@ -116,6 +125,14 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 
 ## 版本历史
 
+### v2.2.0 (2026-03-29)
+
+**主要改进：**
+1. 新增战斗动作编排指南 - 系统性解决一镜到底连贯性问题
+2. 完善Boss对战完整流程（7阶段，缺一不可）
+3. 强化物理逻辑细节（重力、惯性、力的传递、环境反馈）
+4. 优化第一人称POV战斗描述
+
 ### v2.1.0 (2026-03-29)
 
 **主要改进：**
@@ -123,7 +140,7 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 2. 明确禁用词汇清单 - 避免3D渲染感、CG动画风格、卡通化效果
 3. 首帧提示词格式规范 - 必须以"电影级写实摄影，真实拍摄质感"开头
 
-### v2.0.0 (2024-03-29)
+### v2.0.0 (2026-03-29)
 
 **主要改进：**
 1. 视角选择功能 - 支持第一人称POV/第三人称/混合视角
@@ -138,7 +155,7 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 - 优化工作流程（12个步骤）
 - 更新核心原则和重要提醒
 
-### v1.0.0 (2024-03-24)
+### v1.0.0 (2026-03-24)
 
 初始版本，支持基础的视频拆解和提示词生成功能。
 
@@ -146,8 +163,9 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 
 - [技能定义](SKILL.md) - 完整的技能说明和工作流程
 - [提示词写作标准](references/prompt-writing-standards.md) - 详细的写作规范
-- [改进历史](docs/improvements/README.md) - 版本改进详情
-- [项目报告](docs/reports/README.md) - 审查报告、评估报告、性能测试等
+- [战斗动作编排](references/combat-choreography-guide.md) - Boss战完整流程
+- [改进历史](docs/changelog/README.md) - 版本改进详情
+- [项目报告](docs/reports/README.md) - 审查报告、评估报告等
 
 ## 贡献
 
