@@ -58,7 +58,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     # 检查 yt-dlp
-    ytdlp_cmd = ["python", "-m", "yt_dlp"]
+    ytdlp_cmd = ["python3", "-m", "yt_dlp"]
     try:
         subprocess.run(ytdlp_cmd + ["--version"], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
