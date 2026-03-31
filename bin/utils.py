@@ -5,6 +5,7 @@
 """
 
 import os
+import socket
 import sys
 from pathlib import Path
 
@@ -43,15 +44,63 @@ def load_env_file():
                     os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
+def check_proxy_available(host, port, timeout=2):
+    """检测代理端口是否可用"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        return result == 0
+    except Exception:
+        return False
+
+
+def find_available_proxy():
+    """自动检测可用的代理端口"""
+    common_ports = [7890, 7897, 1080, 10809, 10808, 8080, 8118]
+
+    for port in common_ports:
+        if check_proxy_available("127.0.0.1", port):
+            return f"http://127.0.0.1:{port}"
+
+    return None
+
+
 def setup_proxy():
     """设置代理环境变量，返回代理 URL 或 None"""
     proxy_url = os.environ.get("PROXY_URL")
+
     if proxy_url:
-        os.environ["HTTP_PROXY"] = proxy_url
-        os.environ["HTTPS_PROXY"] = proxy_url
-        os.environ["ALL_PROXY"] = proxy_url
-        print(f"[OK] 使用代理: {proxy_url}")
-        return proxy_url
-    else:
-        print("[WARNING] 未配置代理，如果 API 调用失败请在 .env 文件中设置 PROXY_URL")
-        return None
+        # 检测配置的代理是否可用
+        try:
+            if "://" in proxy_url:
+                host_port = proxy_url.split("://")[1]
+            else:
+                host_port = proxy_url
+
+            host, port = host_port.split(":")
+            port = int(port)
+
+            if check_proxy_available(host, port):
+                os.environ["HTTP_PROXY"] = proxy_url
+                os.environ["HTTPS_PROXY"] = proxy_url
+                os.environ["ALL_PROXY"] = proxy_url
+                print(f"[OK] 使用配置的代理: {proxy_url}")
+                return proxy_url
+            else:
+                print(f"[WARNING] 配置的代理 {proxy_url} 不可用，尝试自动检测...")
+        except Exception:
+            print(f"[WARNING] 代理配置格式错误: {proxy_url}，尝试自动检测...")
+
+    # 自动检测可用代理
+    auto_proxy = find_available_proxy()
+    if auto_proxy:
+        os.environ["HTTP_PROXY"] = auto_proxy
+        os.environ["HTTPS_PROXY"] = auto_proxy
+        os.environ["ALL_PROXY"] = auto_proxy
+        print(f"[OK] 自动检测到可用代理: {auto_proxy}")
+        return auto_proxy
+
+    print("[WARNING] 未找到可用代理，如果 API 调用失败请检查代理设置")
+    return None
