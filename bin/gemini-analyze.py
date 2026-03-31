@@ -45,15 +45,9 @@ def check_api_key():
         print("\n" + "=" * 60)
         raise FatalError("未配置 GEMINI_API_KEY，程序终止")
 
-    # 简单验证 API key 格式（Google API key 通常以 AIza 开头）
-    if not key.startswith("AIza"):
-        print("=" * 60)
-        print("WARNING: API key 格式可能不正确")
-        print("=" * 60)
-        print(f"当前 API key: {key[:10]}...")
-        print("Google Gemini API key 通常以 'AIza' 开头")
-        print("请确认你使用的是正确的 API key")
-        print("=" * 60 + "\n")
+    # 简单验证 API key 不为空白字符串
+    if not key.strip():
+        raise FatalError("GEMINI_API_KEY 为空，请填入有效的 API key")
 
     return key
 
