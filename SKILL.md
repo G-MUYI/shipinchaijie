@@ -66,6 +66,8 @@ allowed-tools:
    ❌ 错误：开头就描述"手部被火焰包裹"、"手上闪烁着魔法光芒"
    ✅ 正确：严格按照五阶段渐进描述，详见 `references/prompt-writing-standards.md` 第23-150行
 7. **动作连贯性与物理逻辑** — 所有动作必须符合物理规律，包含完整的动作链（准备→执行→恢复），详见 `references/prompt-writing-standards.md`
+8. **背景微动态** — 每段画面描述中必须包含至少一个背景微动态元素（树叶晃动、灯光闪烁、水面涟漪等），防止生成"死水"般的静止背景，详见 `references/prompt-writing-standards.md`
+9. **材质交互规则** — 描述物体材质时，不仅写"是什么"，还要写"如何运动/反应"（重量感、刚性、表面反应、环境映射），详见 `references/prompt-writing-standards.md`
 
 ## 前置检查
 
@@ -146,6 +148,12 @@ if (Get-Command yt-dlp -ErrorAction SilentlyContinue) { 'YTDLP_OK' } else { 'NO_
 > B) **Seedance 2.0（即梦）** — 使用即梦平台专属格式
 
 **如果选择 Seedance 2.0**，额外询问需要的能力类型（纯文本生成/一致性控制/运镜复刻/视频延长/一镜到底/音乐卡点等）。详见 `references/seedance-guide.md`。
+
+**Seedance 2.0 四大核心原则（必须遵守）：**
+1. **提示词长度控制** — 100-260字最佳，过长反而效果差（通用平台可以500字+）
+2. **单运镜原则** — 每段只写一种运镜，不在一句话中混写多种运镜
+3. **禁止文学化描述** — 必须直白描述可见画面，Seedance 对隐喻/诗意完全不理解
+4. **素材优先于文字** — 角色外观用 `@图片` 锁脸，运镜用 `@视频` 复刻，比文字稳定10倍
 
 ### Step 4: 处理输入
 
@@ -521,9 +529,9 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 
 ## 参考文档
 
-- `references/prompt-writing-standards.md` — 提示词写作标准（手部描述渐进规则、总述区/时间线区要求、真实感渲染描述等）
-- `references/combat-choreography-guide.md` — **战斗动作编排指南（新增）** — 一镜到底连贯性、Boss对战完整流程、物理逻辑细节、第一人称POV战斗特殊处理
-- `references/seedance-guide.md` — Seedance 2.0 平台专属指南（十大能力类型、@引用系统、时长处理策略等）
+- `references/prompt-writing-standards.md` — 提示词写作标准（手部描述渐进规则、总述区/时间线区要求、真实感渲染描述、**背景微动态规则（新增）**、**材质交互规则描述法（新增）**等）
+- `references/combat-choreography-guide.md` — **战斗动作编排指南** — 一镜到底连贯性、**转场遮挡物标注（新增）**、Boss对战完整流程、物理逻辑细节、第一人称POV战斗特殊处理
+- `references/seedance-guide.md` — Seedance 2.0 平台专属指南（十大能力类型、@引用系统、时长处理策略、**四大核心原则（新增）：提示词长度控制/单运镜原则/禁止文学化描述/素材文字分工策略**等）
 - `references/error-handling.md` — 错误处理指南（API错误、依赖安装错误、视频下载错误、文件错误等）
 - `templates/prompt-template.md` — 专业版提示词模板
 - `templates/prompt-template-basic.md` — 基础版提示词模板
@@ -554,3 +562,7 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
   - 第一人称POV的沉浸感（手部伸入画面、视线跟随、身体反馈）
 - **错误要友好** — 所有错误都给出清晰的解决建议
 - **进度要可见** — 每个步骤都输出当前状态
+- **背景要有生气** — 每段画面描述必须包含至少一个背景微动态元素（树叶晃动、灯光闪烁、水面涟漪等），防止"死水"背景
+- **材质要有交互** — 描述物体材质时不仅写属性（金属/布料），还要写交互行为（重量感、刚性变形、表面反应、环境映射）
+- **一镜到底要有遮挡** — 场景切换必须标注物理遮挡物（柱子/墙壁/烟雾/光效），不能直接硬切
+- **Seedance 要精简** — Seedance 提示词控制在100-260字，每段只用一种运镜，禁止文学化隐喻
