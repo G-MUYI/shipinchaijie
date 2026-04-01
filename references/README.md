@@ -78,6 +78,57 @@
 
 ---
 
+### [seedance-style-library.md](./seedance-style-library.md)
+**Seedance 2.0 提示词风格库** — 基于真实数据的内容类型模板库
+
+**核心内容：**
+- FORMAT 声明式、时间轴分镜式、自然叙述式三大框架
+- 7种内容类型专属模板（动作/舞蹈/婚礼/动物/恐怖/科幻/简单）
+- 真实案例参考（武侠、MV卡点等）
+- 高频写作元素统计
+
+**适用场景：** Seedance 2.0 平台提示词生成时选择对应模板
+
+---
+
+### [gemini-analysis-examples.md](./gemini-analysis-examples.md)
+**Gemini 分析示例** — Gemini API 视频分析的输出示例和数据结构
+
+**核心内容：**
+- Gemini API 返回的 JSON 数据结构
+- 各字段的含义和使用方法
+- 真实分析案例参考
+
+**适用场景：** 理解 Gemini 分析结果，调试分析流程
+
+---
+
+### [seedance-real-world-analysis.md](./seedance-real-world-analysis.md)
+**Seedance 真实数据分析** — 基于 9606 条真实提示词的数据分析报告
+
+**核心内容：**
+- 字数分布统计
+- 高频元素出现率
+- 格式类型占比
+- 优化策略建议
+
+**适用场景：** 了解 Seedance 平台的真实使用情况和最佳实践
+
+---
+
+### [checklist.md](./checklist.md)
+**提示词质量检查清单** — 生成提示词后的自检清单
+
+**核心内容：**
+- 手部描述检查项
+- 背景微动态检查项
+- Seedance 专属检查项
+- 通用质量检查项
+
+**适用场景：** 生成提示词后进行质量自检
+
+---
+
 ## 使用建议
 
 ### 新手用户

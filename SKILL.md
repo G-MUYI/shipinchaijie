@@ -1,6 +1,7 @@
 ---
 name: video-breakdown
 version: 2.3.1
+last_updated: 2026-04-01
 description: |
   视频拆解提示词生成器 — 将视频拆解为极其细致的镜头语言描述，生成可直接用于 AI 视频生成工具（Sora、可灵、Runway、Seedance 2.0/即梦）的专业提示词。
 
@@ -142,7 +143,7 @@ if (Get-Command yt-dlp -ErrorAction SilentlyContinue) { 'YTDLP_OK' } else { 'NO_
 - 简单/趣味 → 自然叙述式（无需分段）
 
 **Seedance 2.0 四大核心原则（必须遵守）：**
-1. **提示词长度控制** — 根据复杂度灵活调整：简单场景100-300字，标准场景300-600字，复杂场景600-1000字（通用平台可以500字+）
+1. **提示词长度控制** — 根据复杂度灵活调整：简单场景100-150字，标准场景200-400字，复杂场景500-800字（通用平台可以500字+）
 2. **单运镜原则** — 每段只写一种运镜，不在一句话中混写多种运镜
 3. **禁止文学化描述** — 必须直白描述可见画面，Seedance 对隐喻/诗意完全不理解
 4. **素材优先于文字** — 角色外观用 `@图片` 锁脸，运镜用 `@视频` 复刻，比文字稳定10倍
@@ -281,8 +282,8 @@ FIRST_FRAME_FILE="$SKILL_DIR/output/first-frame-prompt-${TIMESTAMP}.md"
 
 > **⚡ 生成提示词前必读：**
 > 1. 读取 `templates/prompt-output-skeleton.md`，按骨架结构输出，不要自行发明格式
-> 2. 读取 `references/prompt-writing-standards.md` 第23-150行（手部描述五阶段模型，必须严格遵守）
-> 3. 读取 `references/prompt-writing-standards.md` 第584-615行（背景微动态规则，每段必须包含）
+> 2. 读取 `references/prompt-writing-standards.md` 手部描述五阶段模型章节（必须严格遵守）
+> 3. 读取 `references/prompt-writing-standards.md` 背景微动态规则章节（每段必须包含）
 
 #### 通用平台（Sora/可灵/Runway）
 
@@ -314,9 +315,9 @@ FIRST_FRAME_FILE="$SKILL_DIR/output/first-frame-prompt-${TIMESTAMP}.md"
 按 `templates/prompt-output-skeleton.md` 中的 Seedance 骨架生成，并参考 `references/seedance-guide.md` 了解十大能力模式的详细格式，参考 `references/seedance-style-library.md` 获取对应内容类型的真实案例模板。
 
 **字数控制**：根据复杂度灵活调整
-- 简单场景：100-300字
-- 标准场景：300-600字（推荐）
-- 复杂场景：600-1000字
+- 简单场景：100-150字
+- 标准场景：200-400字（推荐）
+- 复杂场景：500-800字
 
 每段单一运镜，禁止文学化，角色用@图片锁定。
 生成后必须在末尾加入音效描述（高质量提示词的共同特征）。
@@ -543,7 +544,7 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 | 背景是静止死板的 | 每段必须有至少一个背景微动态元素 |
 | 战斗场景跳过Boss战阶段 | 必须包含7阶段完整Boss战，详见 combat-choreography-guide.md |
 | 一镜到底直接硬切场景 | 场景切换必须有物理遮挡物（柱子/烟雾/光效） |
-| Seedance 提示词超过260字 | Seedance 根据复杂度控制字数（简单100-300，标准300-600，复杂600-1000），每段只用一种运镜 |
+| Seedance 提示词字数不符合场景复杂度 | Seedance 根据复杂度控制字数（简单100-150，标准200-400，复杂500-800），每段只用一种运镜 |
 | 使用"CG动画""3D渲染"等词汇 | 只用"电影级写实摄影""真实拍摄质感""照片级写实" |
 | 画面描述只写动作不写场景 | 每段必须描述具体画面内容（谁、在哪、背景是什么）|
 | Seedance 提示词缺少音效描述 | 末尾必须加音效列表（音乐层+环境音层+动作音层）|
