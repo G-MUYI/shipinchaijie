@@ -450,6 +450,25 @@ def main():
     with open(prompt_file, "r", encoding="utf-8") as f:
         prompt_text = f.read()
 
+    # 读取 references/ 目录下的规则文档并附加到 prompt
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    references_dir = os.path.join(script_dir, "..", "references")
+
+    reference_files = [
+        ("prompt-writing-standards.md", "提示词写作标准"),
+        ("combat-choreography-guide.md", "战斗动作编排指南"),
+    ]
+
+    for filename, title in reference_files:
+        ref_path = os.path.join(references_dir, filename)
+        if os.path.isfile(ref_path):
+            with open(ref_path, "r", encoding="utf-8") as f:
+                ref_content = f.read()
+                prompt_text += f"\n\n## 附加规则：{title}\n\n{ref_content}"
+            print(f"已加载规则文档: {filename}")
+        else:
+            print(f"WARNING: 规则文档不存在: {filename}")
+
     # 初始化 Gemini 客户端（代理已在前面设置好）
     print("初始化 Gemini API...")
     client = genai.Client(api_key=api_key)
