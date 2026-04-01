@@ -440,9 +440,19 @@ def main():
     # 读取分析 prompt
     prompt_file = args.prompt_file
     if not prompt_file:
-        # 默认路径：相对于脚本所在目录的 ../templates/gemini-prompt.txt
+        # 优先使用新版提示词 gemini-prompt-v2.txt
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        prompt_file = os.path.join(script_dir, "..", "templates", "gemini-prompt.txt")
+        prompt_file_v2 = os.path.join(script_dir, "..", "templates", "gemini-prompt-v2.txt")
+        prompt_file_v1 = os.path.join(script_dir, "..", "templates", "gemini-prompt.txt")
+
+        if os.path.isfile(prompt_file_v2):
+            prompt_file = prompt_file_v2
+            print("使用优化后的 Gemini 提示词 (v2)")
+        elif os.path.isfile(prompt_file_v1):
+            prompt_file = prompt_file_v1
+            print("使用原版 Gemini 提示词 (v1)")
+        else:
+            raise FatalError(f"提示词文件不存在: {prompt_file_v2} 或 {prompt_file_v1}")
 
     if not os.path.isfile(prompt_file):
         raise FatalError(f"提示词文件不存在: {prompt_file}")
@@ -455,6 +465,7 @@ def main():
     references_dir = os.path.join(script_dir, "..", "references")
 
     reference_files = [
+        ("gemini-analysis-examples.md", "分析示例（好坏对比）"),
         ("prompt-writing-standards.md", "提示词写作标准"),
         ("combat-choreography-guide.md", "战斗动作编排指南"),
     ]

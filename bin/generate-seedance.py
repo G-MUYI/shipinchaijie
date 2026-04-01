@@ -28,11 +28,8 @@ def extract_visual_action(text):
     text = re.sub(r'表现出.*?[。，]', '', text)
     text = re.sub(r'情绪.*?[。，]', '', text)
 
-    # 删除音效描述（Seedance主要靠视觉）
-    text = re.sub(r'伴随.*?声[。，]', '', text)
-    text = re.sub(r'音效.*?[。，]', '', text)
-
-    # 删除重复的光影描述
+    # 保留音效描述（真实数据显示70%的提示词包含音效，高优先级）
+    # 删除重复的光影描述（光影在开头总述一次即可）
     text = re.sub(r'光线.*?[。，]', '', text)
     text = re.sub(r'色调.*?[。，]', '', text)
 
