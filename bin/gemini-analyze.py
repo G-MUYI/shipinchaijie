@@ -279,6 +279,7 @@ REQUIRED_NESTED_SCHEMA = {
         "ambient": str,
         "music": str,
         "effects": str,
+        "rhythm_sync": str,
     },
     "hand_description": {
         "natural_state": str,
@@ -360,7 +361,7 @@ def validate_analysis_schema(raw):
 
     # 添加可选字段的默认值
     if "overall_sound" not in raw:
-        raw["overall_sound"] = {"ambient": "无", "music": "无", "effects": "无"}
+        raw["overall_sound"] = {"ambient": "无", "music": "无", "effects": "无", "rhythm_sync": "无"}
     if "additional_notes" not in raw:
         raw["additional_notes"] = "无"
 

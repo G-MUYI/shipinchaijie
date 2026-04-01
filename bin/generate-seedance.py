@@ -64,17 +64,22 @@ def generate_segment_prompt(seg):
     action = seg.get('character_action', '')
     effects = seg.get('effects', '')
 
-    # 提取场景中的关键战斗元素
+    # 提取场景描述：第一句（环境上下文）+ 战斗元素句（如有）
     scene_info = ''
-    if '小怪' in scene or '鱼人' in scene or '敌人' in scene or 'Boss' in scene:
-        # 提取包含敌人信息的句子
-        sentences = scene.split('。')
-        for s in sentences[1:]:  # 跳过第一句环境描述
-            if s.strip() and ('小怪' in s or '鱼人' in s or 'Boss' in s or '敌人' in s):
-                scene_info = s.strip() + '。'
-                break
+    if scene:
+        sentences = [s.strip() for s in scene.split('。') if s.strip()]
+        env_sentence = sentences[0] if sentences else ''
+        battle_sentence = ''
+        if '小怪' in scene or '鱼人' in scene or '敌人' in scene or 'Boss' in scene:
+            for s in sentences[1:]:
+                if '小怪' in s or '鱼人' in s or 'Boss' in s or '敌人' in s:
+                    battle_sentence = s
+                    break
+        scene_info = env_sentence + '。'
+        if battle_sentence:
+            scene_info += battle_sentence + '。'
 
-    # 组合：运镜 + 场景战斗元素 + 动作 + 特效
+    # 组合：运镜 + 场景描述 + 动作 + 特效
     parts = [camera]
     if scene_info:
         parts.append(scene_info)
@@ -91,33 +96,29 @@ def generate_first_frame_prompt(segments, hand_desc, scene_desc):
     if not segments:
         return ""
 
-    first_seg = segments[0]
-    action = first_seg.get('character_action', '')
-    seg_scene = first_seg.get('scene', '')
+    # 使用Gemini分析的真实手部状态（修复：不再硬编码）
+    natural_state = hand_desc.get('natural_state', '白皙纤细的女性手部')
+    magic_ball = hand_desc.get('magic_ball', '乒乓球大小的魔法球')
 
-    # 从 segment 的 scene 中提取完整环境描述
-    scene_env = ""
-    if seg_scene and '背景' in seg_scene:
-        bg_start = seg_scene.find('背景')
-        if bg_start != -1:
-            # 提取"背景"之后到场景描述结束的所有内容
-            bg_text = seg_scene[bg_start:].replace('背景', '').strip()
-            # 移除开头的"虚化为"等连接词
-            bg_text = re.sub(r'^(虚化为|是|为)', '', bg_text).strip()
-            scene_env = bg_text
-
-    # 如果没有提取到，使用顶层 scene_description
-    if not scene_env:
+    # 优先从当前segments第一段提取场景（适配多星座各自场景）
+    # fallback到顶层scene_description
+    first_seg_scene = segments[0].get('scene', '')
+    if first_seg_scene:
+        # 只取第一句，避免把人物动作/特效描述混入环境
+        scene_env = first_seg_scene.split('。')[0]
+    else:
         scene_env = scene_desc if scene_desc else "神秘的魔法环境"
 
-    # 简化：只保留手部外观
-    hand_visual = "一只白皙纤细的女性手部"
-    if '指甲' in action or '美甲' in action:
-        nail_match = re.search(r'(指甲|美甲)[^。，]*', action)
-        if nail_match:
-            hand_visual = f"一只白皙纤细的女性手部，{nail_match.group()}"
+    # 确保末尾有标点，避免与后续文字直接拼接（修复：补充分隔符）
+    if scene_env and scene_env[-1] not in '。，,.':
+        scene_env += '。'
 
-    prompt = f"电影级写实摄影，真实拍摄质感。第一人称POV视角，画面中央是{hand_visual}，手掌托举一颗乒乓球大小的魔法球。场景：{scene_env}ARRI Alexa Mini LF拍摄，浅景深，手部清晰背景虚化，4K超高清画质。\n\n禁止出现：CG动画、3D渲染、卡通化、动画风格、文字、字幕、LOGO、水印。"
+    prompt = (
+        f"电影级写实摄影，真实拍摄质感。第一人称POV视角，画面中央是{natural_state}，"
+        f"手掌托举{magic_ball}。场景：{scene_env}"
+        f"ARRI Alexa Mini LF拍摄，浅景深，手部清晰背景虚化，4K超高清画质。\n\n"
+        f"禁止出现：CG动画、3D渲染、卡通化、动画风格、文字、字幕、LOGO、水印。"
+    )
 
     return prompt
 
@@ -133,13 +134,15 @@ def generate_video_prompt(segments, visual_style):
     prompt = f"@图片1为首帧参考。第一人称POV视角，{scene_short}\n\n"
     prompt += "## 完整Boss战流程（7阶段）\n\n"
 
-    # 定义战斗阶段映射
+    # 定义战斗阶段映射（对齐模板7阶段）
     stage_map = {
-        0: "【阶段1：魔法球展示】",
-        1: "【阶段2：捏爆激活+小怪冲击】",
-        2: "【阶段3：AOE清场】",
-        3: "【阶段4：Boss攻击+闪避反击】",
-        4: "【阶段5：终极大招释放】"
+        0: "【阶段1：小怪清场】",
+        1: "【阶段2：Boss登场】",
+        2: "【阶段3：Boss首次攻击】",
+        3: "【阶段4：主角闪避】",
+        4: "【阶段5：主角反击准备】",
+        5: "【阶段6：终极大招释放】",
+        6: "【阶段7：Boss受击与结束】",
     }
 
     for idx, seg in enumerate(segments):
@@ -156,31 +159,27 @@ def generate_video_prompt(segments, visual_style):
     return prompt
 
 
-def split_segments_by_zodiac(segments):
-    """根据时间范围拆分多星座视频的segments"""
-    # 根据实际视频的星座切换时间点（每个星座约15秒）
-    zodiac_boundaries = [
-        (0, 15),      # 双鱼座: 0-15秒
-        (15, 30),     # 天秤座: 15-30秒
-        (30, 45),     # 天蝎座: 30-45秒
-        (45, 60),     # 白羊座: 45-60秒
-        (60, 75),     # 摩羯座: 60-75秒
-        (75, 999)     # 处女座: 75秒-结束
-    ]
+def parse_zodiac_names(zodiac_sign_str):
+    """从zodiac_sign字段解析实际星座名称列表，支持、，, 和空格分隔"""
+    if not zodiac_sign_str:
+        return []
+    names = re.split(r'[、，,\s]+', zodiac_sign_str.strip())
+    return [n.strip() for n in names if n.strip()]
 
-    zodiac_segments = [[] for _ in range(6)]
 
-    for seg in segments:
-        time_range = seg.get('time_range', '00:00.000-00:01.000')
-        start_time = parse_time(time_range.split('-')[0])
+def split_segments_by_zodiac(segments, zodiac_names):
+    """将segments按星座数量均分（动态边界，不依赖硬编码时间）"""
+    n = len(zodiac_names)
+    if n == 0 or not segments:
+        return [[] for _ in zodiac_names]
 
-        # 找到对应的星座索引
-        for idx, (start, end) in enumerate(zodiac_boundaries):
-            if start <= start_time < end:
-                zodiac_segments[idx].append(seg)
-                break
-
-    return zodiac_segments
+    chunk_size = len(segments) / n
+    result = []
+    for i in range(n):
+        start = int(i * chunk_size)
+        end = int((i + 1) * chunk_size) if i < n - 1 else len(segments)
+        result.append(segments[start:end])
+    return result
 
 
 def parse_time(time_str):
@@ -211,18 +210,16 @@ def main():
     zodiac_signs = data.get('zodiac_sign', '')
     scene_desc = data.get('scene_description', '')
 
-    # 检查是否多星座（根据zodiac_sign字段判断）
-    zodiac_names = ['双鱼座', '天秤座', '天蝎座', '白羊座', '摩羯座', '处女座']
-
-    # 只有当zodiac_sign包含多个星座时才拆分
-    is_multi_zodiac = '、' in zodiac_signs or '，' in zodiac_signs
+    # 解析实际星座名称（修复：不再硬编码，支持、，, 和空格分隔）
+    zodiac_names = parse_zodiac_names(zodiac_signs)
+    is_multi_zodiac = len(zodiac_names) > 1
 
     if is_multi_zodiac:
-        # 多星座视频，拆分
-        print(f"检测到多星座视频，自动拆分为{len(zodiac_names)}个文件")
-        zodiac_segments = split_segments_by_zodiac(segments)
+        # 多星座视频，按实际星座名称拆分
+        print(f"检测到多星座视频（{zodiac_signs}），自动拆分为{len(zodiac_names)}个文件")
+        zodiac_segments = split_segments_by_zodiac(segments, zodiac_names)
 
-        for idx, (name, segs) in enumerate(zip(zodiac_names, zodiac_segments)):
+        for name, segs in zip(zodiac_names, zodiac_segments):
             if not segs:
                 continue
 
