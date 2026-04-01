@@ -144,8 +144,7 @@ Write-Output ""
 Write-Output "[5/5] Checking template files..."
 $templateChecks = @(
     @{ Path = Join-Path $projectDir "templates\prompt-template.md"; Name = "Professional template" },
-    @{ Path = Join-Path $projectDir "templates\prompt-template-basic.md"; Name = "Basic template" },
-    @{ Path = Join-Path $projectDir "templates\gemini-prompt.txt"; Name = "Gemini prompt" }
+    @{ Path = Join-Path $projectDir "templates\gemini-prompt-v2.txt"; Name = "Gemini prompt (v2)" }
 )
 
 foreach ($check in $templateChecks) {

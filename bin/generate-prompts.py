@@ -147,7 +147,7 @@ def generate_detailed_report(data):
     hand = data.get('hand_description', {})
     subtitle_audio = data.get('subtitle_audio', {})
     suggestions = data.get('production_suggestions', {})
-    zodiac = data.get('zodiac_sign', '未知星座')
+    zodiac = '、'.join(data.get('zodiac_signs', [])) or '未知星座'
 
     return f"""# 视频拆解报告
 
@@ -212,7 +212,7 @@ def generate_detailed_report(data):
 
 def generate_prompt(data):
     """生成完整提示词"""
-    zodiac = data.get('zodiac_sign', '未知星座')
+    zodiac = '、'.join(data.get('zodiac_signs', [])) or '未知星座'
 
     output = f"""{generate_detailed_report(data)}
 

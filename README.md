@@ -100,9 +100,8 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 │   ├── generate-seedance.py    # Seedance 2.0 专属提示词生成工具
 │   └── utils.py                # 共享工具函数
 ├── templates/
-│   ├── gemini-prompt.txt       # Gemini 分析提示词
-│   ├── prompt-template.md      # 专业版提示词模板
-│   └── prompt-template-basic.md # 基础版提示词模板
+│   ├── gemini-prompt-v2.txt    # Gemini 分析提示词（v2）
+│   └── prompt-template.md      # 专业版提示词模板
 ├── references/                 # 参考文档
 │   ├── prompt-writing-standards.md  # 提示词写作标准
 │   ├── combat-choreography-guide.md # 战斗动作编排指南

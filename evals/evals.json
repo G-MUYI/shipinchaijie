@@ -187,6 +187,67 @@
         "包含自然光线描述（樱花树下的光影）",
         "结尾包含'禁止出现文字、字幕、LOGO或水印'"
       ]
+    },
+    {
+      "id": 11,
+      "name": "video-link-input",
+      "prompt": "帮我拆解这个视频：https://www.youtube.com/watch?v=dQw4w9WgXcQ 通用平台格式，第三人称视角。",
+      "expected_output": "调用 video-download.py 下载视频，调用 gemini-analyze.py 分析视频，生成包含详细拆解报告和AI视频提示词的文件",
+      "files": [],
+      "assertions": [
+        "调用了 bin/video-download.py 进行视频下载",
+        "调用了 bin/gemini-analyze.py 进行视频分析",
+        "输出文件保存在 output 目录下",
+        "文件包含'总述区'和'时间线区'两个主要部分",
+        "时间线区按1-2秒分段",
+        "包含首帧AI绘图提示词"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "local-file-input",
+      "prompt": "帮我拆解这个本地视频文件：output/tmp/test-video.mp4 通用平台格式，第一人称POV视角。",
+      "expected_output": "验证本地文件存在后直接调用 gemini-analyze.py 分析，生成包含详细拆解报告和AI视频提示词的文件",
+      "files": [],
+      "assertions": [
+        "验证了本地视频文件是否存在",
+        "调用了 bin/gemini-analyze.py 进行视频分析",
+        "输出文件保存在 output 目录下",
+        "文件包含'总述区'和'时间线区'两个主要部分",
+        "明确标注为第一人称POV视角",
+        "包含首帧AI绘图提示词"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "test-mode",
+      "prompt": "我想测试一下视频拆解功能，使用测试模式。通用平台格式。",
+      "expected_output": "使用内置的台北街头雨中奔跑测试案例，无需真实视频，生成完整的拆解报告和提示词",
+      "files": [],
+      "assertions": [
+        "使用了内置测试案例（台北街头雨中奔跑场景）",
+        "无需调用视频下载或Gemini分析",
+        "输出文件保存在 output 目录下",
+        "文件包含'总述区'和'时间线区'两个主要部分",
+        "包含首帧AI绘图提示词",
+        "包含15秒竖屏短视频的时间线分段"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "seedance-consistency-control",
+      "prompt": "帮我写一个即梦平台的视频提示词，使用一致性控制模式。内容：一个穿旗袍的女生在上海外滩走路，10秒竖屏。我有一张她的照片可以用来锁脸。",
+      "expected_output": "生成 Seedance 2.0 一致性控制模式的提示词，使用 @图片 引用锁定角色外观",
+      "files": [],
+      "assertions": [
+        "输出文件保存在 output 目录下",
+        "使用了 @图片 引用来锁定角色外观",
+        "包含角色一致性控制说明",
+        "包含旗袍女生和上海外滩的场景描述",
+        "字数在300-600字范围内（标准场景）",
+        "包含音效描述",
+        "禁止文学化描述，使用直白可见画面描述"
+      ]
     }
   ]
 }

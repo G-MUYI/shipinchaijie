@@ -207,7 +207,8 @@ def main():
     segments = data.get('segments', [])
     hand_desc = data.get('hand_description', {})
     visual_style = data.get('visual_style', {})
-    zodiac_signs = data.get('zodiac_sign', '')
+    zodiac_signs_list = data.get('zodiac_signs', [])
+    zodiac_signs = '、'.join(zodiac_signs_list) if zodiac_signs_list else ''
     scene_desc = data.get('scene_description', '')
 
     # 解析实际星座名称（修复：不再硬编码，支持、，, 和空格分隔）

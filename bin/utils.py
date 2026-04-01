@@ -8,6 +8,7 @@ import os
 import socket
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 def ensure_utf8_output():
@@ -74,13 +75,11 @@ def setup_proxy():
     if proxy_url:
         # 检测配置的代理是否可用
         try:
-            if "://" in proxy_url:
-                host_port = proxy_url.split("://")[1]
-            else:
-                host_port = proxy_url
-
-            host, port = host_port.split(":")
-            port = int(port)
+            parsed = urlparse(proxy_url if "://" in proxy_url else f"http://{proxy_url}")
+            host = parsed.hostname
+            port = parsed.port
+            if not host or not port:
+                raise ValueError(f"无法解析主机或端口: {proxy_url}")
 
             if check_proxy_available(host, port):
                 os.environ["HTTP_PROXY"] = proxy_url

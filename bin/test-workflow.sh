@@ -72,8 +72,7 @@ rm /tmp/test-new-format.md
 echo ""
 echo "[5/5] 检查模板文件..."
 [ -f "$PROJECT_DIR/templates/prompt-template.md" ] && echo "✓ 专业版模板" || echo "✗ 专业版模板缺失"
-[ -f "$PROJECT_DIR/templates/prompt-template-basic.md" ] && echo "✓ 基础版模板" || echo "✗ 基础版模板缺失"
-[ -f "$PROJECT_DIR/templates/gemini-prompt.txt" ] && echo "✓ Gemini 提示词" || echo "✗ Gemini 提示词缺失"
+[ -f "$PROJECT_DIR/templates/gemini-prompt-v2.txt" ] && echo "✓ Gemini 提示词 (v2)" || echo "✗ Gemini 提示词缺失"
 
 echo ""
 echo "=== 测试完成 ==="

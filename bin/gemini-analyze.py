@@ -67,8 +67,8 @@ def check_dependencies():
 
 def get_model_name():
     """获取 Gemini 模型名称，支持环境变量覆盖"""
-    # 默认使用 gemini-2.5-flash，可通过 GEMINI_MODEL 环境变量覆盖
-    return os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    # 默认使用 gemini-3-flash-preview，可通过 GEMINI_MODEL 环境变量覆盖
+    return os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
 
 
 def upload_video(client, video_path):
@@ -233,7 +233,7 @@ def cleanup_file(client, uploaded_file):
 REQUIRED_TOP_LEVEL_SCHEMA = {
     "basic_info": dict,
     "summary": str,
-    "zodiac_sign": str,
+    "zodiac_signs": list,
     "visual_style": dict,
     "lighting_texture": dict,
     "realism_quality": dict,
@@ -359,6 +359,10 @@ def validate_analysis_schema(raw):
     if not isinstance(raw, dict):
         raise ValueError(f"分析结果根节点必须是对象，实际为 {type(raw).__name__}")
 
+    # 兼容旧版 Gemini 返回 zodiac_sign（字符串）的情况，自动迁移为 zodiac_signs（数组）
+    if "zodiac_sign" in raw and "zodiac_signs" not in raw:
+        raw["zodiac_signs"] = [raw["zodiac_sign"]] if raw["zodiac_sign"] else []
+
     # 添加可选字段的默认值
     if "overall_sound" not in raw:
         raw["overall_sound"] = {"ambient": "无", "music": "无", "effects": "无", "rhythm_sync": "无"}
@@ -418,7 +422,7 @@ def main():
     parser.add_argument(
         "--prompt-file",
         default=None,
-        help="分析提示词文件路径（默认使用 templates/gemini-prompt.txt）",
+        help="分析提示词文件路径（默认使用 templates/gemini-prompt-v2.txt）",
     )
     parser.add_argument(
         "--output",
@@ -453,7 +457,7 @@ def main():
         # 优先使用新版提示词 gemini-prompt-v2.txt
         script_dir = os.path.dirname(os.path.abspath(__file__))
         prompt_file_v2 = os.path.join(script_dir, "..", "templates", "gemini-prompt-v2.txt")
-        prompt_file_v1 = os.path.join(script_dir, "..", "templates", "gemini-prompt.txt")
+        prompt_file_v1 = os.path.join(script_dir, "..", "templates", "gemini-prompt.txt")  # 向后兼容
 
         if os.path.isfile(prompt_file_v2):
             prompt_file = prompt_file_v2
