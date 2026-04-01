@@ -4,8 +4,8 @@
 
 ## 版本信息
 
-- **当前版本：** 2.3.0
-- **最后更新：** 2026-03-31
+- **当前版本：** 2.3.1
+- **最后更新：** 2026-04-01
 - **改进内容：**
   - ✅ Seedance 2.0 平台专属优化：提示词长度控制、单运镜原则、禁止文学化描述、素材与文字分工策略
   - ✅ 一镜到底转场遮挡物标注（6种遮挡物类型，防止硬切）
@@ -77,6 +77,9 @@ python bin/video-download.py "https://youtube.com/watch?v=xxx" output/tmp
 # Gemini 分析视频
 python bin/gemini-analyze.py video.mp4 --output output/analysis.json
 
+# 生成 Seedance 2.0 专属提示词
+python bin/generate-seedance.py output/analysis.json --output-dir output
+
 # 校验输出格式
 python bin/validate-output.py breakdown output/video-breakdown-xxx.md
 python bin/validate-output.py remix output/video-remix-xxx.md
@@ -93,7 +96,8 @@ python bin/validate-output.py remix output/video-remix-xxx.md
 │   ├── gemini-analyze.py       # Gemini API 视频分析
 │   ├── video-download.py       # yt-dlp 视频下载
 │   ├── validate-output.py      # 输出格式校验
-│   ├── generate-prompts.py     # 提示词生成工具
+│   ├── generate-prompts.py     # 通用提示词生成工具
+│   ├── generate-seedance.py    # Seedance 2.0 专属提示词生成工具
 │   └── utils.py                # 共享工具函数
 ├── templates/
 │   ├── gemini-prompt.txt       # Gemini 分析提示词

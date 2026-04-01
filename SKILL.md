@@ -1,6 +1,6 @@
 ---
 name: video-breakdown
-version: 2.3.0
+version: 2.3.1
 description: |
   视频拆解提示词生成器 — 将视频拆解为极其细致的镜头语言描述，生成可直接用于 AI 视频生成工具（Sora、可灵、Runway、Seedance 2.0/即梦）的专业提示词。
 
