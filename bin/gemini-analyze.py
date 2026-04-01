@@ -358,6 +358,12 @@ def validate_analysis_schema(raw):
     if not isinstance(raw, dict):
         raise ValueError(f"分析结果根节点必须是对象，实际为 {type(raw).__name__}")
 
+    # 添加可选字段的默认值
+    if "overall_sound" not in raw:
+        raw["overall_sound"] = {"ambient": "无", "music": "无", "effects": "无"}
+    if "additional_notes" not in raw:
+        raw["additional_notes"] = "无"
+
     errors = validate_dict_fields("root", raw, REQUIRED_TOP_LEVEL_SCHEMA)
 
     for section_name, fields in REQUIRED_NESTED_SCHEMA.items():
@@ -383,6 +389,9 @@ def validate_analysis_schema(raw):
             if not isinstance(segment, dict):
                 errors.append(f"segments[{index}] 必须是对象")
                 continue
+            # 为没有台词的段落添加默认 dialogue_tone
+            if "dialogue" not in segment or not segment["dialogue"] or segment["dialogue"] == "无":
+                segment["dialogue_tone"] = "无"
             errors.extend(validate_dict_fields(f"segments[{index}]", segment, SEGMENT_REQUIRED_FIELDS))
 
     if errors:

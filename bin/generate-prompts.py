@@ -30,7 +30,10 @@ def generate_first_frame_prompt(data):
     natural_state = hand.get('natural_state', '手部自然状态')
     magic_ball = hand.get('magic_ball', '魔法球')
 
-    prompt = f"""电影级写实摄影，真实拍摄质感。{natural_state}。{magic_ball}。{scene}。"""
+    # 确保场景描述存在且完整
+    scene_desc = scene if scene else '神秘的魔法环境，光影交错'
+
+    prompt = f"""电影级写实摄影，真实拍摄质感。{natural_state}。{magic_ball}。场景：{scene_desc}。"""
     prompt += f"""{lighting.get('light_type', '自然光')}，{lighting.get('texture', '清晰质感')}。"""
     prompt += """次表面散射的真实皮肤，物理正确的光影，全局光照，体积光穿透空气，HDR高动态范围。照片级写实，避免3D渲染感、CG动画风格、卡通化效果。"""
 

@@ -86,26 +86,38 @@ def generate_segment_prompt(seg):
     return f"**{time_range}：** {' '.join(parts)}"
 
 
-def generate_first_frame_prompt(segments, hand_desc):
+def generate_first_frame_prompt(segments, hand_desc, scene_desc):
     """生成首帧绘图提示词"""
     if not segments:
         return ""
 
     first_seg = segments[0]
-    scene = first_seg.get('scene', '')
     action = first_seg.get('character_action', '')
+    seg_scene = first_seg.get('scene', '')
 
-    # 简化场景描述：只提取第一句话，避免混入其他星座内容
-    scene_clean = scene.split('。')[0] if '。' in scene else scene[:80]
+    # 从 segment 的 scene 中提取完整环境描述
+    scene_env = ""
+    if seg_scene and '背景' in seg_scene:
+        bg_start = seg_scene.find('背景')
+        if bg_start != -1:
+            # 提取"背景"之后到场景描述结束的所有内容
+            bg_text = seg_scene[bg_start:].replace('背景', '').strip()
+            # 移除开头的"虚化为"等连接词
+            bg_text = re.sub(r'^(虚化为|是|为)', '', bg_text).strip()
+            scene_env = bg_text
 
-    # 简化：只保留手部外观，删除动作
+    # 如果没有提取到，使用顶层 scene_description
+    if not scene_env:
+        scene_env = scene_desc if scene_desc else "神秘的魔法环境"
+
+    # 简化：只保留手部外观
     hand_visual = "一只白皙纤细的女性手部"
-    if '指甲' in action:
-        nail_match = re.search(r'指甲[^。，]*', action)
+    if '指甲' in action or '美甲' in action:
+        nail_match = re.search(r'(指甲|美甲)[^。，]*', action)
         if nail_match:
             hand_visual = f"一只白皙纤细的女性手部，{nail_match.group()}"
 
-    prompt = f"电影级写实摄影，真实拍摄质感。第一人称POV视角，画面中央是{hand_visual}，手掌托举一颗乒乓球大小的魔法球。背景{scene_clean}。ARRI Alexa Mini LF拍摄，浅景深，手部清晰背景虚化，4K超高清画质。\n\n禁止出现：CG动画、3D渲染、卡通化、动画风格、文字、字幕、LOGO、水印。"
+    prompt = f"电影级写实摄影，真实拍摄质感。第一人称POV视角，画面中央是{hand_visual}，手掌托举一颗乒乓球大小的魔法球。场景：{scene_env}ARRI Alexa Mini LF拍摄，浅景深，手部清晰背景虚化，4K超高清画质。\n\n禁止出现：CG动画、3D渲染、卡通化、动画风格、文字、字幕、LOGO、水印。"
 
     return prompt
 
@@ -146,14 +158,14 @@ def generate_video_prompt(segments, visual_style):
 
 def split_segments_by_zodiac(segments):
     """根据时间范围拆分多星座视频的segments"""
-    # 根据实际视频的星座切换时间点
+    # 根据实际视频的星座切换时间点（每个星座约15秒）
     zodiac_boundaries = [
-        (0, 14),      # 双鱼座: 0-14秒
-        (14, 27),     # 天秤座: 14-27秒
-        (27, 42),     # 天蝎座: 27-42秒
-        (42, 57),     # 白羊座: 42-57秒
-        (57, 72),     # 摩羯座: 57-72秒
-        (72, 999)     # 处女座: 72秒-结束
+        (0, 15),      # 双鱼座: 0-15秒
+        (15, 30),     # 天秤座: 15-30秒
+        (30, 45),     # 天蝎座: 30-45秒
+        (45, 60),     # 白羊座: 45-60秒
+        (60, 75),     # 摩羯座: 60-75秒
+        (75, 999)     # 处女座: 75秒-结束
     ]
 
     zodiac_segments = [[] for _ in range(6)]
@@ -197,11 +209,15 @@ def main():
     hand_desc = data.get('hand_description', {})
     visual_style = data.get('visual_style', {})
     zodiac_signs = data.get('zodiac_sign', '')
+    scene_desc = data.get('scene_description', '')
 
-    # 检查是否多星座
+    # 检查是否多星座（根据zodiac_sign字段判断）
     zodiac_names = ['双鱼座', '天秤座', '天蝎座', '白羊座', '摩羯座', '处女座']
 
-    if '、' in zodiac_signs or len(segments) > 10:
+    # 只有当zodiac_sign包含多个星座时才拆分
+    is_multi_zodiac = '、' in zodiac_signs or '，' in zodiac_signs
+
+    if is_multi_zodiac:
         # 多星座视频，拆分
         print(f"检测到多星座视频，自动拆分为{len(zodiac_names)}个文件")
         zodiac_segments = split_segments_by_zodiac(segments)
@@ -211,7 +227,7 @@ def main():
                 continue
 
             output_file = output_dir / f'seedance-{name}.md'
-            first_frame = generate_first_frame_prompt(segs, hand_desc)
+            first_frame = generate_first_frame_prompt(segs, hand_desc, scene_desc)
             video_prompt = generate_video_prompt(segs, visual_style)
 
             with open(output_file, 'w', encoding='utf-8') as f:
@@ -226,7 +242,7 @@ def main():
     else:
         # 单一主题
         output_file = output_dir / 'seedance-prompt.md'
-        first_frame = generate_first_frame_prompt(segments, hand_desc)
+        first_frame = generate_first_frame_prompt(segments, hand_desc, scene_desc)
         video_prompt = generate_video_prompt(segments, visual_style)
 
         with open(output_file, 'w', encoding='utf-8') as f:
