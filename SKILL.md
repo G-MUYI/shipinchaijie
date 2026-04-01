@@ -205,6 +205,13 @@ $PY_CMD "$SKILL_DIR/bin/gemini-analyze.py" "VIDEO_FILE_PATH" --output "$ANALYSIS
 6. **风格关键词** — 电影级写实摄影、真实拍摄质感、照片级写实、具体的摄影机型号和镜头参数
 7. **禁止词汇** — 严禁使用"CG动画"、"3D渲染"、"动画风格"、"卡通化"等词汇
 
+**首帧环境描述来源优先级（按顺序取用）：**
+1. **第一优先**：Gemini 分析 `segments[0].scene` 中的环境描述（最贴合视频实际首帧画面）
+2. **第二优先**：Gemini 分析 `scene_description`（全局场景描述，可补充首帧缺失的细节）
+3. **第三优先**：用户文字描述中的场景信息（无视频分析时使用）
+
+**多主题视频注意**：每个主题的首帧应使用该主题对应段落的首个 `segment.scene`，而非全局 `scene_description`。
+
 **首帧提示词格式示例：**
 
 ```
@@ -284,6 +291,51 @@ FIRST_FRAME_FILE="$SKILL_DIR/output/first-frame-prompt-${TIMESTAMP}.md"
 > 1. 读取 `templates/prompt-output-skeleton.md`，按骨架结构输出，不要自行发明格式
 > 2. 读取 `references/prompt-writing-standards.md` 手部描述五阶段模型章节（必须严格遵守）
 > 3. 读取 `references/prompt-writing-standards.md` 背景微动态规则章节（每段必须包含）
+
+#### 子步骤 8.3.1：内容类型判断（必须在生成前完成）
+
+根据 Gemini 分析数据判断视频内容类型，选择对应的提示词骨架和写作策略：
+
+**判断依据（按优先级）：**
+1. **用户明确说明** — 如用户说"这是个打斗视频"，直接采用
+2. **Gemini `basic_info.overall_style`** — 含"战斗/打斗"→动作类，含"舞蹈"→MV类
+3. **Gemini `summary` 关键词** — 检查综合总结中的主题描述
+4. **`segments` 内容关键词** — 战斗类含"Boss/小怪/攻击/闪避"；舞蹈类含"舞步/卡点/BPM"
+
+| 内容类型 | 判断关键词 | 对应骨架 |
+|---------|-----------|---------|
+| 动作/打斗 | Boss、小怪、攻击、闪避、战斗、挥剑、格斗 | 时间轴分镜式 + Boss战7阶段 |
+| 舞蹈/MV | 舞蹈、跳舞、MV、卡点、BPM、编舞 | FORMAT声明式或时间轴式 |
+| 婚礼/情感 | 婚礼、新郎、新娘、婚纱、戒指 | 时间轴分镜式 + 丁达尔效应 |
+| 恐怖/悬疑 | 恐怖、悬疑、惊悚、阴森 | 时间轴分镜式 + 固定镜头 |
+| 科幻/赛博朋克 | 赛博朋克、科幻、机械、霓虹、全息 | FORMAT声明式 + 霓虹色调 |
+| 动物拟人 | 动物、拟人、ASMR、萌宠 | 步骤分镜式 + ASMR音效 |
+| 自然风光 | 风光、日出、山、海、森林 | 时间轴分镜式 |
+| 通用/日常 | 以上均不匹配 | 时间轴分镜式 |
+
+**⚠️ 重要：** 只有战斗类视频才使用 Boss 战7阶段结构！非战斗视频严禁套用 Boss 战框架。
+
+#### 子步骤 8.3.2：Gemini 数据 → 提示词字段映射（生成时必须参照）
+
+将 Gemini 分析 JSON 的每个字段精确映射到提示词的对应位置，**禁止遗漏或创意填充**：
+
+| Gemini JSON 字段 | 提示词位置 | 提取要求 |
+|-----------------|-----------|---------|
+| `basic_info.duration` + `aspect_ratio` | 总述区：时长与画幅 | 直接引用 |
+| `visual_style.color_tone` + `environment` | 总述区：视觉风格与色调 | 完整保留色调描述 |
+| `lighting_texture` | 总述区：光线与质感 | 保留光源类型、方向、色温 |
+| `overall_camera` | 总述区：镜头运动 | 转为箭头轨迹格式 |
+| `character_description` | 总述区：角色设定 | 完整保留外观描述 |
+| `overall_sound` | 总述区：音频设计 | 保留音乐/环境音/音效 |
+| `segments[].camera_movement` | 每段：运镜 | 保留速度、幅度和轨迹，不简化为类型词 |
+| `segments[].scene` | 每段：画面描述 | **完整保留，不能只取首句！** 含构图、光线、材质交互 |
+| `segments[].character_action` | 每段：人物动作 | 保留肢体细节 |
+| `segments[].character_emotion` | 每段：人物情绪 | 保留面部肌肉动作描述 |
+| `segments[].sound` | 每段：声音设计 | **Seedance 高优先级！** 必须保留 |
+| `segments[].effects` | 每段：特效描述 | 保留特效持续性描述 |
+| `segments[].dialogue` + `dialogue_tone` | 每段：台词 | 保留语气标注 |
+| `segments[].transition` | 每段：转场 | 保留转场方式 |
+| `hand_description` | 手部五阶段描述 | 按阶段对应到时间线各段 |
 
 #### 通用平台（Sora/可灵/Runway）
 
@@ -542,6 +594,7 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 | 特效触发后消失、不持续 | 特效一旦触发，后续每段都必须描述持续状态 |
 | 背景是静止死板的 | 每段必须有至少一个背景微动态元素 |
 | 战斗场景跳过Boss战阶段 | 必须包含7阶段完整Boss战，详见 combat-choreography-guide.md |
+| 非战斗视频套用Boss战框架 | 只有战斗类视频才使用Boss战7阶段结构，婚礼/舞蹈/日常等视频严禁套用 |
 | 一镜到底直接硬切场景 | 场景切换必须有物理遮挡物（柱子/烟雾/光效） |
 | Seedance 提示词字数不符合场景复杂度 | Seedance 根据复杂度控制字数（简单100-300，标准300-600，复杂600-1000），每段只用一种运镜 |
 | 使用"CG动画""3D渲染"等词汇 | 只用"电影级写实摄影""真实拍摄质感""照片级写实" |
@@ -550,3 +603,7 @@ $PY_CMD "$SKILL_DIR/bin/validate-output.py" breakdown "$REMIX_FILE"
 | Seedance 提示词使用文学化描述 | 禁止隐喻/诗意，只描述可见画面（详见 seedance-guide.md 原则3）|
 | Seedance 长提示词未使用 FORMAT 声明 | MV/科幻/多镜头场景应使用 FORMAT 声明式骨架 |
 | 内容类型与骨架不匹配 | 参考 seedance-style-library.md 选择对应骨架 |
+| 运镜描述只写类型不写速度 | 必须包含速度修饰（缓慢/快速/骤然）和景别轨迹变化 |
+| 首帧视角与用户选择不一致 | 首帧视角必须与 Step 2 用户选择的视角类型一致 |
+| 提取 Gemini 数据时丢失字段 | 参照子步骤 8.3.2 映射表，完整提取每个字段，不遗漏 sound/emotion/dialogue |
+| 情绪描述使用抽象词 | 必须通过面部肌肉动作描述（眉头微皱、嘴角上扬）传达情绪，不写"高兴""紧张" |
